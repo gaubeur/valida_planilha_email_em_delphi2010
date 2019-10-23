@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2018/02/07 15:09:26.004.pas,C:\Users\Mauricio\Documents\RAD Studio\Projects\Unit1.pas=C:\Projetos\ValidaPlanilhaEmailDelphi\UValidaPlanilhaEmailDelphi.pas</Transaction>
+    <Transaction>2018/02/07 15:09:26.004.dfm,C:\Users\Mauricio\Documents\RAD Studio\Projects\Unit1.dfm=C:\Projetos\ValidaPlanilhaEmailDelphi\UValidaPlanilhaEmailDelphi.dfm</Transaction>
+    <Transaction>2018/02/07 15:09:29.241.dproj,C:\Users\Mauricio\Documents\RAD Studio\Projects\Project1.dproj=C:\Projetos\ValidaPlanilhaEmailDelphi\ValidaPlanilhaEmailDelphi.dproj</Transaction>
+    <Transaction>2018/02/07 15:14:02.334.pas,C:\Projetos\ValidaPlanilhaEmailDelphi\UValidaPlanilhaEmailDelphi.pas=</Transaction>
+    <Transaction>2018/02/07 15:14:02.334.dfm,C:\Projetos\ValidaPlanilhaEmailDelphi\UValidaPlanilhaEmailDelphi.dfm=</Transaction>
+  </Transactions>
+</BorlandProject>

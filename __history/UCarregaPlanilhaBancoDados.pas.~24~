@@ -1,0 +1,291 @@
+unit UCarregaPlanilhaBancoDados;
+
+interface
+
+uses
+  Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
+  Dialogs, ComCtrls, RDprint, ImgList, ToolWin, StdCtrls, Mask, Grids, FileCtrl, ComObj;
+
+type
+  TFrmCarregaPlanilhaBancoDados = class(TForm)
+    PageControl1: TPageControl;
+    TabSheet1: TTabSheet;
+    StaBar: TStatusBar;
+    PrgBar: TProgressBar;
+    TBMenu: TToolBar;
+    tbprocessararquivo: TToolButton;
+    tbbtnsair: TToolButton;
+    ImageList2: TImageList;
+    ImageList1: TImageList;
+    RDprint1: TRDprint;
+    memoarquivo: TMemo;
+    StrGrdItem: TStringGrid;
+    Tabselecao: TTabSheet;
+    DriveComboBox1: TDriveComboBox;
+    DirectoryListBox1: TDirectoryListBox;
+    FileListBox1: TFileListBox;
+    edtarquivo: TEdit;
+    Label1: TLabel;
+    Label3: TLabel;
+    lbldiretorio: TLabel;
+    Label4: TLabel;
+    ToolButton1: TToolButton;
+    Label5: TLabel;
+    lbltotalregistros: TLabel;
+    Label2: TLabel;
+    lbltotregbase: TLabel;
+    procedure tbbtnsairClick(Sender: TObject);
+    procedure mkeddatainiEnter(Sender: TObject);
+    procedure mkeddatafinEnter(Sender: TObject);
+    procedure mkeddatafinExit(Sender: TObject);
+    procedure mkeddatainiExit(Sender: TObject);
+    procedure FormShow(Sender: TObject);
+    procedure FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure ToolButton1Click(Sender: TObject);
+    procedure tbprocessararquivoClick(Sender: TObject);
+  private
+    { Private declarations }
+    procedure ganha_foco(Sender: TObject);
+    procedure perde_foco(Sender: TObject);
+  public
+    { Public declarations }
+  end;
+
+var
+  FrmCarregaPlanilhaBancoDados: TFrmCarregaPlanilhaBancoDados;
+
+implementation
+
+uses UGlobal, UDados;
+
+{$R *.dfm}
+
+function XlsToStringGrid(AGrid: TStringGrid; AXLSFile: string): Boolean;
+const
+	xlCellTypeLastCell = $0000000B;
+var
+	XLApp, Sheet: OLEVariant;
+	RangeMatrix: Variant;
+	x, y, k, r: Integer;
+begin
+Result:=False;
+//Cria Excel- OLE Object
+XLApp:=CreateOleObject('Excel.Application');
+try
+	//Esconde Excel
+	XLApp.Visible:=False;
+
+	//Abre o Workbook
+	XLApp.Workbooks.Open(AXLSFile);
+	Sheet:=XLApp.Workbooks[ExtractFileName(AXLSFile)].WorkSheets[1];
+	Sheet.Cells.SpecialCells(xlCellTypeLastCell, EmptyParam).Activate;
+	//Pegar o número da última linha
+	x:=XLApp.ActiveCell.Row;
+	//Pegar o número da última coluna
+	y:=XLApp.ActiveCell.Column+2;
+	//Seta Stringgrid linha e coluna
+	AGrid.RowCount:=x;
+	AGrid.ColCount:=y;
+	//Associaca a variant WorkSheet com a variant do Delphi
+	RangeMatrix:=XLApp.Range['A1', XLApp.Cells.Item[X, Y]].Value;
+	//Cria o loop para listar os registros no TStringGrid
+	k:=1;
+	repeat
+		for r:=1 to y do
+			AGrid.Cells[(r - 1),(k - 1)]:=RangeMatrix[K, R];
+		Inc(k,1);
+	until k > x;
+	RangeMatrix:=Unassigned;
+finally
+	//Fecha o Excel
+	if not VarIsEmpty(XLApp) then
+		begin
+    FrmCarregaPlanilhaBancoDados.lbltotalregistros.Caption := inttostr(k-2);
+		XLApp.Quit;
+		XLAPP:=Unassigned;
+		Sheet:=Unassigned;
+		Result:=True;
+		end;
+	end;
+end;
+
+procedure carrega_bancodedados;
+begin
+
+FrmCarregaPlanilhaBancoDados.StaBar.Panels[0].Text := 'PROCESSAMENTO INICIADO [ FASE 1 ] : LOCALIZANDO O MOVIMENTO FINANCEIRO ...';
+
+FrmCarregaPlanilhaBancoDados.prgbar.Max := FrmCarregaPlanilhaBancoDados.StrGrdItem.RowCount;
+
+ind:= 0;
+
+While FrmCarregaPlanilhaBancoDados.StrGrdItem.RowCount > Ind do begin
+
+  FrmCarregaPlanilhaBancoDados.prgbar.Position := ind;
+  Application.ProcessMessages;
+
+  if FrmCarregaPlanilhaBancoDados.StrGrdItem.Row = 0 then begin
+    ind := ind + 1;
+    Continue;
+  end;
+
+// significa que ja leu todos os registros
+  if Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[0,Ind]) = '' then begin
+    ind := FrmCarregaPlanilhaBancoDados.StrGrdItem.RowCount;
+    Continue;
+  end;
+
+  auxsql := ' select * from base where email = :email ';
+  FrmDados.CDSConsulta.Close;
+  FrmDados.CDSConsulta.CommandText := auxsql;
+  FrmDados.CDSConsulta.Params[0].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[0,Ind]);
+  FrmDados.CDSConsulta.Open;
+  if FrmDados.CDSConsulta.Eof = False then begin
+    ind := ind + 1;
+    Continue;
+  end;
+
+  auxsql := ' insert into base ';
+  auxsql := auxsql + ' ( cpf, nome, email, datanasc, dia ) ';
+  auxsql := auxsql + ' values ';
+  auxsql := auxsql + ' ( :cpf, :nome, :email, :datanasc, :dia ) ';
+
+  FrmDados.CDSConsulta.Close;
+  FrmDados.CDSConsulta.CommandText := auxsql;
+  FrmDados.CDSConsulta.Params[0].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[0,Ind]);
+  FrmDados.CDSConsulta.Params[1].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[1,Ind]);
+  FrmDados.CDSConsulta.Params[2].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[2,Ind]);
+  FrmDados.CDSConsulta.Params[3].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[3,Ind]);
+  FrmDados.CDSConsulta.Params[4].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[4,Ind]);
+  FrmDados.CDSConsulta.Params[5].AsString  := Trim(FrmCarregaPlanilhaBancoDados.StrGrdItem.Cells[5,Ind]);
+  FrmDados.CDSConsulta.Execute;
+
+  FrmCarregaPlanilhaBancoDados.lbltotregbase.Caption := inttostr(ind);
+  Application.ProcessMessages;
+
+  ind := ind + 1;
+end;
+
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.FormKeyUp(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+if key = 27 then FrmCarregaPlanilhaBancoDados.close;
+
+if key = 13 then begin
+  key := 0;
+  perform(cm_dialogkey,vk_tab,0);
+end;
+
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.FormShow(Sender: TObject);
+begin
+
+lbltotalregistros.Caption := '0';
+lbltotregbase.Caption     := '0';
+
+memoarquivo.Lines.Clear;
+
+//FrmDados.CDSConsulta.close;
+//FrmDados.CDSConsulta.CommandText := ' Select getdate() as DataHoraDB ';
+//FrmDados.CDSConsulta.Open;
+
+//auxstr := FrmDados.CDSConsulta.FieldByName('DataHoraDB').AsString;
+
+//auxdatastr := copy(auxstr,1,10);
+//auxdatadb  := StrToDate(auxdatastr);
+
+//auxhoras   := copy(auxstr,12,5);
+//auxhoradb  := StrToTime(auxhoras);
+
+
+
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.ganha_foco(Sender: TObject);
+begin
+  if (Sender is TEdit) then
+  begin (Sender as TEdit)
+    .Color := clYellow;
+  end;
+  if (Sender is TComboBox) then
+  begin (Sender as TComboBox)
+    .Color := clYellow;
+  end;
+  if (Sender is TMaskEdit) then
+  begin (Sender as TMaskEdit)
+    .Color := clYellow;
+  end;
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.mkeddatafinEnter(Sender: TObject);
+begin
+ganha_foco(Sender);
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.mkeddatafinExit(Sender: TObject);
+begin
+perde_foco(Sender);
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.mkeddatainiEnter(Sender: TObject);
+begin
+ganha_foco(Sender);
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.mkeddatainiExit(Sender: TObject);
+begin
+perde_foco(Sender);
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.perde_foco(Sender: TObject);
+begin
+  if (Sender is TEdit) then
+  begin (Sender as TEdit)
+    .Color := clWhite;
+  end;
+  if (Sender is TComboBox) then
+  begin (Sender as TComboBox)
+    .Color := clWhite;
+  end;
+  if (Sender is TMaskEdit) then
+  begin (Sender as TMaskEdit)
+    .Color := clWhite;
+  end;
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.tbbtnsairClick(Sender: TObject);
+begin
+close;
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.tbprocessararquivoClick(
+  Sender: TObject);
+begin
+
+lbltotregbase.Caption := '0';
+
+prgbar.Max := StrGrdItem.RowCount;
+
+carrega_bancodedados;
+
+Showmessage('Processamento Finalizado com Sucesso! ');
+
+
+end;
+
+procedure TFrmCarregaPlanilhaBancoDados.ToolButton1Click(Sender: TObject);
+begin
+
+  lbltotalregistros.Caption := '0';
+  FrmCarregaPlanilhaBancoDados.lbltotregbase.Caption := '0';
+
+  arquivo := lbldiretorio.Caption + '\' + edtarquivo.Text;
+  XlsToStringGrid(StrGrdItem,arquivo);
+
+  tbprocessararquivo.Enabled := True;
+
+end;
+
+end.

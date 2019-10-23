@@ -1,0 +1,15 @@
+program ValidaPlanilhaEmailDelphi;
+
+uses
+  Forms,
+  UCarregaPlanilhaBancoDados in 'UCarregaPlanilhaBancoDados.pas' {FrmCarregaPlanilhaBancoDados},
+  UGlobal in 'UGlobal.pas';
+
+{$R *.res}
+
+begin
+  Application.Initialize;
+  Application.MainFormOnTaskbar := True;
+  Application.CreateForm(TFrmCarregaPlanilhaBancoDados, FrmCarregaPlanilhaBancoDados);
+  Application.Run;
+end.
